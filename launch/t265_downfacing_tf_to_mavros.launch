@@ -42,4 +42,7 @@
         <remap from="vision_pose" to="/mavros/vision_pose/pose" />
         <remap from="landing_raw" to="/mavros/landing_target/raw" />
     </node>
+
+    <!-- tf between t265 body_frame (cam_link) to T265 velocity for downfacing, usb port to the back-->
+    <node pkg="tf" type="static_transform_publisher" name="body_t265_vel_tf" args="0 0 0 -1.5707963 0 1.5707963 /camera_pose_frame /body_t265_vel_frame 100" />
 </launch>
