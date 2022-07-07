@@ -1,0 +1,5 @@
+<launch>
+    <arg name="delay" default="4"/>
+    <!-- This node will launch the ROS driver for Realsense T265 -->
+    <include file="$(find vision_to_mavros)/launch/vehicle3_t265_all_nodes.launch" />
+</launch>
