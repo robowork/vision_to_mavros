@@ -12,5 +12,6 @@
     <include file="$(find vision_to_mavros)/launch/t265_downfacing_tf_to_mavros.launch"/>
     
     <!-- This node will launch the nodes that detect april tag and publish static transforms-->
-    <include file="$(find winglet_detector)/launch/winglet_detector-khadas.launch"/>
+    <!-- <include file="$(find winglet_detector)/launch/winglet_detector-khadas.launch"/> -->
+    <include file="$(find winglet_detector)/launch/stack-khadas.launch"/>
 </launch>
