@@ -1,0 +1,17 @@
+<launch>
+    <!-- Launch 3 nodes as below
+    At development stage, each node should be launched in a separated terminal to view the output -->
+
+    <!-- This node will launch the ROS driver for Realsense T265 -->
+    <include file="$(find realsense2_camera)/launch/rs_t265.launch"/>
+
+    <!-- This node will launch MAVROS -->
+    <include file="$(find mavros)/launch/vehicle3_apm_usb.launch"/>
+
+    <!-- This node will launch the node that bridges realsense-ros and MAVROS -->
+    <include file="$(find vision_to_mavros)/launch/t265_downfacing_tf_to_mavros.launch"/>
+    
+    <!-- This node will launch the nodes that detect april tag and publish static transforms-->
+    <!-- <include file="$(find winglet_detector)/launch/winglet_detector-khadas.launch"/> -->
+    <include file="$(find winglet_detector)/launch/stack-khadas.launch"/>
+</launch>
