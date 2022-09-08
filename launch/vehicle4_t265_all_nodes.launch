@@ -13,5 +13,9 @@
 
 	<!-- This node will launch the nodes that detect april tag and publish static transforms-->
 	<!-- <include file="$(find winglet_detector)/launch/winglet_detector-khadas.launch"/> -->
-	<include file="$(find winglet_detector)/launch/stack-khadas.launch"/>
+	<!-- <include file="$(find winglet_detector)/launch/stack-khadas.launch"/> -->
+	<include file="$(find winglet_detector)/launch/stack-khadas_noApriltag.launch"/>
+
+	<!-- This node will launch rosbag -->
+	<include file="$(find khadas_control)/launch/rosbag_tg.launch"/>
 </launch>
