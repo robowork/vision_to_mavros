@@ -1,4 +1,13 @@
 <launch>
+    <arg name="port" default="video0" />
+	<!-- check if usb cam is attached to video 0 -->
+	<group if="$(eval port == 'video0')">
+		<include file="$(find usb_cam)/launch/usb_cam_video0.launch"/>
+	</group>
+	<!-- check if usb cam is attached to video 1 -->
+	<group if="$(eval port == 'video1')">
+		<include file="$(find usb_cam)/launch/usb_cam_video1.launch"/>
+	</group>
 	<!-- Launch 3 nodes as below
 	At development stage, each node should be launched in a separated terminal to view the output -->
 
