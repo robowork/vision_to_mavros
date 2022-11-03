@@ -1,0 +1,77 @@
+<launch>
+    <arg name="throttle_rate" default="28" />
+    <arg name="static_txn_rate" default="100" />
+    <arg name="camera_ns" default="/camera" />
+    <arg name="throttle_in_topic" default="fisheye1/image_raw" />
+    <arg name="throttle_out_topic" default="fisheye1/image_raw_throttle" />
+    <node pkg="topic_tools" type="throttle" name="fisheye_1_image_raw_throttle_node" args="messages $(arg camera_ns)/$(arg throttle_in_topic) $(arg throttle_rate) $(arg camera_ns)/$(arg throttle_out_topic)"/>
+
+    <arg name="throttle_in_topic_2" default="fisheye2/image_raw" />
+    <arg name="throttle_out_topic_2" default="fisheye2/image_raw_throttle" />
+    <node pkg="topic_tools" type="throttle" name="fisheye_2_image_raw_throttle_node" args="messages $(arg camera_ns)/$(arg throttle_in_topic_2) $(arg throttle_rate) $(arg camera_ns)/$(arg throttle_out_topic_2)"/>
+
+    <arg name="launch_prefix" default="" />
+    <arg name="node_namespace" default="apriltag_ros_continuous_node" />
+    <arg name="camera_name" default="/usb_cam" />
+    <arg name="camera_frame" default="camera"/>
+    <arg name="image_topic" default="image_rect_color" />
+    <!-- <arg name="image_topic" default="image_rect_color_throttle" />  -->
+
+    <!-- Set parameters -->
+    <!-- <rosparam command="load" file="$(find winglet_detector)/config/settings_landing.yaml" ns="$(arg node_namespace)" /> -->
+    <rosparam command="load" file="$(find apriltag_ros)/config/settings.yaml" ns="$(arg node_namespace)" />
+    <rosparam command="load" file="$(find apriltag_ros)/config/tags.yaml" ns="$(arg node_namespace)" />
+
+    <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="$(arg node_namespace)" clear_params="true" output="screen" launch-prefix="$(arg launch_prefix)" respawn="true">
+        <remap from="image_rect" to="$(arg camera_name)/$(arg image_topic)_throttle" />
+        <!-- <remap from="camera_info" to="$(arg camera_name)/camera_info" /> -->
+        <remap from="camera_info" to="$(arg camera_name)/camera_info_throttle" />
+        <param name="publish_tag_detections_image" type="bool" value="true" />
+    </node>
+    <!--Start rviz to visualize coordinate frame of the apriltag-->
+    <!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find winglet_detector)/rviz/winglet.rviz"/> -->
+
+    <!--Start rqt viewer to monitor apriltag detection. Choose /tag_detection_image froum source list-->
+    <!-- <node type="rqt_gui" name="rqt_gui_view" pkg="rqt_kgui" respawn="false" output="screen"/> -->
+
+    <!--static_transform_publisher x y z yaw pitch roll frame_id child_frame_id-->
+    <!-- DEFINITIONS:
+        base_link:                          PixRacer Auto Pilot Odom Frame
+        camera_odom_frame:                  Master MH T265 odom (IMU) frame
+        camera_pose_frame:                  Master MH T265 frame
+        usb_cam:                            HBV Winglet camera frame
+        apriltag:                           AprilTag frame
+        apriltag_usb_cam_align:             AprilTag coordinate frame in HBV Winglet cam coordinate frame
+        camera_pose_frame_2:                Slave MH T265 frame
+        (downfacing)usb_cam:                 Downfacing ELP HD USB Cam
+        apriltag(_downfacing)_usb_cam_align:  AprilTag coordinate frame in Downfacing ELP HD USB Cam
+    -->
+    <!-- WINGLET-DOCKING FRAME TRANSFORMATION SETTINGS -->
+    <!-- <node pkg="tf" type="static_transform_publisher" name="base_to_cam_1_static_transform_publisher" args=" 0.004 -0.057 0.38 1.5707963 0 0 camera_pose_frame usb_cam $(arg static_txn_rate)" respawn="true"/> -->
+    <!-- <node pkg="tf" type="static_transform_publisher" name="base_to_cam_static_transform_publisher" args="0.05 -0.05 -0.38 1.5707963 3.1415926 0 apriltag camera_pose_frame_2 $(arg static_txn_rate)" respawn="true" /> -->
+    <!-- <node pkg="tf" type="static_transform_publisher" name="apriltag_to_apriltag_usb_cam_align_static_transform_publisher" args="0.0 0.0 0.0 0.0 3.1415926 0.0 apriltag apriltag_usb_cam_align $(arg static_txn_rate)" respawn="true"/> -->
+    <!-- <node pkg="tf" type="static_transform_publisher" name="body_to_t265_static_transform_publisher" args=" 0 0 0 1.5707963 0 -1.5707963  camera_pose_frame base_link $(arg static_txn_rate)" respawn="true"/> -->
+    
+    <!-- LANDING FRAME TRANSFORMATION SETTINGS-->
+    <!-- "camera_pose_frame" (?) to "base_link" (PixRacer AutoPilot frame) -->
+    <node pkg="tf" type="static_transform_publisher" name="body_to_t265_static_transform_publisher" args=" 0 0 0 1.5707963 0 -1.5707963  camera_pose_frame base_link $(arg static_txn_rate)" respawn="true"/>
+    <!-- "camera_pose_frame" (?) to "camera_odom_frame" (Master MH T265 odom (IMU) frame) -->
+    <!-- <node pkg="tf" type="static_transform_publisher" name="base_to_cam_1_static_transform_publisher" args=" 0 0 0 1.5707963 0 0 camera_pose_frame usb_cam $(arg static_txn_rate)" respawn="true"/> -->
+    <!-- "camera_pos_frame" (?) to "downfacing_usb_cam" (Downfacing ELP HD USB Cam) -->
+    <node pkg="tf" type="static_transform_publisher" name="base_to_cam_static_transform_publisher" args=" 0 0 0 0 1.5707963 0 camera_pose_frame usb_cam $(arg static_txn_rate)" respawn="true"/>
+    <!-- "apriltag" (AprilTag frame) to "apriltag_downfacing_usb_cam_align (AprilTag coordinate frame in Downfacing ELP HD USB Cam)"  -->
+    <node pkg="tf" type="static_transform_publisher" name="apriltag_to_apriltag_usb_cam_align_static_transform_publisher" args="0 0 0 1.5707963 0 0 tag_0 apriltag_usb_cam_align $(arg static_txn_rate)" respawn="true"/>
+    <!-- <node pkg="tf" type="static_transform_publisher" name="apriltag_to_spotmini_static_transform_publisher" args="0 0.30 -0.14 1.5707963 0.3490659 0 apriltag spotmini $(arg static_txn_rate)" respawn="true" /> -->
+    <node pkg="tf" type="static_transform_publisher" name="t265_odom_to_ned_world_static_transform_publisher" args=" 0 0 0 1.5707963 0 0 camera_odom_frame world_ned $(arg static_txn_rate)" respawn="true"/>
+    <!-- 1.5707963 0.3490659 -->
+
+    <!-- <node pkg="tf" type="static_transform_publisher" name="base_to_cam_1_static_transform_publisher" args=" 0.0 0.0 0.0 1.5707963 0 0 downfacing_camera_pose_frame_rotated usb_cam $(arg static_txn_rate)" respawn="true"/>
+    <node pkg="tf" type="static_transform_publisher" name="base_to_cam_static_transform_publisher" args="0.05 -0.05 -0.38 1.5707963 3.1415926 0 apriltag camera_pose_frame_2 $(arg static_txn_rate)" respawn="true" />
+    <node pkg="tf" type="static_transform_publisher" name="apriltag_to_apriltag_usb_cam_align_static_transform_publisher" args="0.0 0.0 0.0 0.0 3.1415926 0.0 apriltag apriltag_usb_cam_align $(arg static_txn_rate)" respawn="true"/>
+    <node pkg="tf" type="static_transform_publisher" name="body_to_t265_static_transform_publisher" args=" 0 0 0 1.5707963 0 -1.5707963  camera_pose_frame base_link $(arg static_txn_rate)" respawn="true"/>
+    <node pkg="tf" type="static_transform_publisher" name="downfacing_cam_to_t265_static_transform_publisher" args=" 0.008 0 0 -1.5707963 3.1415926 0 base_link downfacing_camera_pose_frame $(arg static_txn_rate)" respawn="true"/>
+    <node pkg="tf" type="static_transform_publisher" name="downfacing_cam_rotated_to_t265_static_transform_publisher" args=" 0.008 0 0 1.5707963 3.1415926 0 base_link downfacing_camera_pose_frame_rotated $(arg static_txn_rate)" respawn="true"/>
+    <node pkg="tf" type="static_transform_publisher" name="fixed_to_t265_static_transform_publisher" args=" 0 0 0.5 0 0 3.1415926 base_link fixed_frame $(arg static_txn_rate)" respawn="true"/> -->
+
+    <node pkg="khadas_control" type="body_inertial_static_transformer.py" name="body_inertial_static_transformer" respawn="true" />
+</launch>

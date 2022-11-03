@@ -1,0 +1,90 @@
+<launch>
+    <arg name="throttle_rate" default="28" />
+    <arg name="camera_ns" default="/usb_cam" />
+    <arg name="throttle_in_topic" default="image_rect" />
+    <arg name="throttle_out_topic" default="image_rect_throttle" />
+    <arg name="static_txn_rate" default="100" />
+    <node pkg="topic_tools" type="throttle" name="image_rect_throttle_node" args="messages $(arg camera_ns)/$(arg throttle_in_topic) $(arg throttle_rate) $(arg camera_ns)/$(arg throttle_out_topic)"/>
+    
+    <!--Include usb_cam launch-->
+    <!-- <include file="$(find winglet_detector)/launch/usb_cam-khadas.launch"/> -->
+
+    <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
+        <param name="video_device" value="/dev/video0" /> 
+        <!-- <param name="video_device" value="/dev/video1" />  -->
+        <!-- <param name="video_device" value="/dev/video2" />  -->
+        <param name="image_width" value="1280" />
+        <param name="image_height" value="720" />
+        <param name="pixel_format" value="mjpeg" />
+        <param name="framerate" value="30" />
+        <param name="camera_frame_id" value="usb_cam" />
+        <param name="io_method" value="mmap"/>
+        <param name="camera_info_url" value="file://$(find winglet_detector)/config/camchain-hbv_cam.yaml"/>
+    </node>
+
+    <!--Include image_prog package-->
+    <!-- <include file="$(find winglet_detector)/launch/image_proc-winglet.launch"/> -->
+    <arg name="camera" default="usb_cam" />
+    <arg name="num_worker_threads" default="2" />
+    <arg name="manager" value="$(arg camera)_nodelet_manager" />
+
+    <group ns="$(arg camera)">
+        <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="screen" respawn="true">
+            <param name="num_worker_threads" value="$(arg num_worker_threads)" />
+        </node>
+
+        <include file="$(find image_proc_tools)/launch/fisheye_rect.launch">
+            <arg name="nodelet_manager" value="$(arg manager)" />
+        <arg name="respawn" value="true"/>
+        </include>
+
+        <!-- <include file="$(find image_proc)/launch/image_proc.launch">
+        <arg name="manager" value="$(arg manager)" />
+        </include> -->
+    </group>
+
+
+
+    <!--Include apriltag detector package-->
+    <!-- <include file="$(find winglet_detector)/launch/continuous_detection.launch"/> -->
+    <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
+    <arg name="node_namespace" default="apriltag_ros_continuous_node" />
+    <arg name="camera_name" default="/usb_cam" />
+    <arg name="camera_frame" default="camera"/>
+    <arg name="image_topic" default="image_rect_throttle" />
+    <!-- <arg name="image_topic" default="image_rect" /> -->
+
+    <!-- Set parameters -->
+    <rosparam command="load" file="$(find winglet_detector)/config/settings_large.yaml" ns="$(arg node_namespace)" />
+    <!-- <rosparam command="load" file="$(find winglet_detector)/config/tags.yaml" ns="$(arg node_namespace)" /> -->
+
+    <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="$(arg node_namespace)" clear_params="true" output="screen" launch-prefix="$(arg launch_prefix)" respawn="true">
+        <!-- Remap topics from those used in code to those on the ROS network -->
+        <remap from="image_rect" to="$(arg camera_name)/$(arg image_topic)" />
+        <remap from="camera_info" to="$(arg camera_name)/camera_info" />
+
+        <param name="publish_tag_detections_image" type="bool" value="true" />      <!-- default: false -->
+    </node>
+    <!--Start rviz to visualize coordinate frame of the apriltag-->
+    <!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find winglet_detector)/rviz/winglet.rviz"/> -->
+
+    <!--Start rqt viewer to monitor apriltag detection. Choose /tag_detection_image froum source list-->
+    <!-- <node type="rqt_gui" name="rqt_gui_view" pkg="rqt_kgui" respawn="false" output="screen"/> -->
+
+    <!--static_transform_publisher x y z yaw pitch roll frame_id child_frame_id-->
+    <!-- DEFINITIONS:
+        camera_pose_frame:      Master MH T265 frame
+        usb_cam:                HBV Winglet camera frame
+        apriltag:               AprilTag frame
+        apriltag_usb_cam_align: AprilTag coordinate frame in HBV Winglet cam coordinate frame
+        camera_pose_frame_2:    Slave MH T265 frame
+        base_link:
+        downfacing_cam:         Downfacing ELP Camera frame
+    -->
+    <node pkg="tf" type="static_transform_publisher" name="base_to_cam_1_static_transform_publisher" args=" 0.004 -0.057 0.38 1.5707963 0 0 camera_pose_frame usb_cam $(arg static_txn_rate)" respawn="true"/>
+    <node pkg="tf" type="static_transform_publisher" name="base_to_cam_static_transform_publisher" args="0.05 -0.05 -0.38 1.5707963 3.1415926 0 apriltag camera_pose_frame_2 $(arg static_txn_rate)" respawn="true" />
+    <node pkg="tf" type="static_transform_publisher" name="apriltag_to_apriltag_usb_cam_align_static_transform_publisher" args="0.0 0.0 0.0 0.0 3.1415926 0.0 apriltag apriltag_usb_cam_align $(arg static_txn_rate)" respawn="true"/>
+    <node pkg="tf" type="static_transform_publisher" name="body_to_t265_static_transform_publisher" args=" 0 0 0 1.5707963 0 -1.5707963  camera_pose_frame base_link $(arg static_txn_rate)" respawn="true"/>
+
+    <node pkg="khadas_control" type="body_inertial_static_transformer.py" name="body_inertial_static_transformer" respawn="true" />
+</launch>
