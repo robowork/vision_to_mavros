@@ -17,6 +17,8 @@
     <arg name="image_topic" default="image_rect_color" />
     <!-- <arg name="image_topic" default="image_rect_color_throttle" />  -->
 
+    <arg name="t265_camera_name" default="/camera" />
+    <arg name="t265_image_topic" default="fisheye1/image_raw_throttle" />
     <!-- Set parameters -->
     <!-- <rosparam command="load" file="$(find winglet_detector)/config/settings_landing.yaml" ns="$(arg node_namespace)" /> -->
     <rosparam command="load" file="$(find apriltag_ros)/config/settings.yaml" ns="$(arg node_namespace)" />
@@ -26,6 +28,8 @@
         <remap from="image_rect" to="$(arg camera_name)/$(arg image_topic)_throttle" />
         <!-- <remap from="camera_info" to="$(arg camera_name)/camera_info" /> -->
         <remap from="camera_info" to="$(arg camera_name)/camera_info_throttle" />
+        <remap from="t265_image_rect" to="$(arg t265_camera_name)/$(arg t265_image_topic)" />        
+        <remap from="t265_camera_info" to="$(arg t265_camera_name)/fisheye1/camera_info" />
         <param name="publish_tag_detections_image" type="bool" value="true" />
     </node>
     <!--Start rviz to visualize coordinate frame of the apriltag-->
